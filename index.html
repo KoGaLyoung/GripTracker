@@ -29,7 +29,7 @@ h1,h2,h3{
     margin-top:0;
 }
 
-input, select, textarea{
+input, select{
     width:100%;
     padding:14px;
     margin-top:10px;
@@ -106,6 +106,10 @@ button{
     </select>
 
     <input
+        type="datetime-local"
+        id="dateTimeInput">
+
+    <input
         type="number"
         id="sleepInput"
         placeholder="Sleep Hours">
@@ -138,6 +142,19 @@ button{
 
     <button onclick="saveGrip()">
         Save Entry
+    </button>
+
+    <button onclick="exportData()">
+        Export Backup
+    </button>
+
+    <input
+        type="file"
+        id="importFile"
+        accept=".json">
+
+    <button onclick="importData()">
+        Import Backup
     </button>
 
 </div>
@@ -267,6 +284,90 @@ function addCustomFactor(){
     renderFactors();
 }
 
+function exportData(){
+
+    const data = {
+
+        gripData:getData(),
+
+        customFactors:getFactors()
+
+    };
+
+    const blob = new Blob(
+        [JSON.stringify(data,null,2)],
+        {type:"application/json"}
+    );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+        "griptracker_backup.json";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function importData(){
+
+    const file =
+        document.getElementById("importFile")
+        .files[0];
+
+    if(!file){
+
+        alert("Select a backup file");
+
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        try{
+
+            const imported =
+                JSON.parse(e.target.result);
+
+            if(imported.gripData){
+
+                localStorage.setItem(
+                    "gripData",
+                    JSON.stringify(imported.gripData)
+                );
+            }
+
+            if(imported.customFactors){
+
+                localStorage.setItem(
+                    "customFactors",
+                    JSON.stringify(imported.customFactors)
+                );
+            }
+
+            renderFactors();
+
+            updateUI();
+
+            alert("Backup imported");
+
+        }catch{
+
+            alert("Invalid backup file");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
 function formatTime(t){
 
     return new Date(t).toLocaleString();
@@ -298,6 +399,10 @@ function saveGrip(){
     const fatigue =
         document.getElementById("fatigueInput").value;
 
+    const customTime =
+        document.getElementById("dateTimeInput")
+        .value;
+
     const checked =
       [...document.querySelectorAll(
         '#factorChecklist input:checked'
@@ -314,7 +419,7 @@ function saveGrip(){
         sleep:sleep,
         fatigue:fatigue,
         factors:checked,
-        time:new Date().toISOString()
+        time:new Date(customTime).toISOString()
 
     });
 
@@ -561,6 +666,15 @@ function updateUI(){
 renderFactors();
 
 updateUI();
+
+document.getElementById("dateTimeInput")
+    .value =
+    new Date(
+      Date.now()
+      - new Date().getTimezoneOffset()*60000
+    )
+    .toISOString()
+    .slice(0,16);
 
 </script>
 
