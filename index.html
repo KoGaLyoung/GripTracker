@@ -2,98 +2,325 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Grip Tracker</title>
+<title>Grip Tracker Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
 body{
-    font-family: sans-serif;
-    padding:20px;
-    max-width:500px;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#f2f2f7;
+    margin:0;
+    padding:18px;
+    max-width:700px;
     margin:auto;
-    background:#f5f5f5;
 }
 
 .card{
     background:white;
-    padding:20px;
-    border-radius:16px;
-    margin-bottom:20px;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
 }
 
-input{
+h1,h2,h3{
+    margin-top:0;
+}
+
+input, select, textarea{
     width:100%;
-    padding:15px;
-    font-size:24px;
+    padding:14px;
+    margin-top:10px;
     border-radius:12px;
     border:1px solid #ccc;
+    font-size:16px;
+    box-sizing:border-box;
 }
 
 button{
     width:100%;
-    padding:15px;
-    margin-top:10px;
-    font-size:20px;
+    padding:16px;
+    margin-top:14px;
     border:none;
-    border-radius:12px;
+    border-radius:14px;
+    font-size:18px;
+    font-weight:bold;
+    background:black;
+    color:white;
 }
 
 .stat{
-    font-size:20px;
-    margin:10px 0;
+    font-size:18px;
+    margin:8px 0;
 }
+
+.big{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.green{ color:green; }
+.orange{ color:orange; }
+.red{ color:red; }
+
+.small{
+    font-size:14px;
+    color:#666;
+}
+
+.entry{
+    padding:12px 0;
+    border-bottom:1px solid #eee;
+}
+
+.factorItem{
+    margin:8px 0;
+    font-size:16px;
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="card">
-    <h1>Grip Tracker</h1>
 
-    <input type="number" id="gripInput" placeholder="Enter grip strength">
+    <h1>Grip Tracker Pro</h1>
 
-    <button onclick="saveGrip()">Save</button>
+    <input
+        type="number"
+        id="gripInput"
+        placeholder="Grip Strength (kg)">
+
+    <select id="handSelect">
+        <option value="Right">Right Hand</option>
+        <option value="Left">Left Hand</option>
+    </select>
+
+    <select id="modeSelect">
+        <option value="Morning">Morning</option>
+        <option value="Pre-training">Pre-training</option>
+        <option value="Post-training">Post-training</option>
+    </select>
+
+    <input
+        type="number"
+        id="sleepInput"
+        placeholder="Sleep Hours">
+
+    <input
+        type="number"
+        id="fatigueInput"
+        placeholder="Fatigue 1-10">
+
 </div>
 
 <div class="card">
+
+    <h2>Factors</h2>
+
+    <div id="factorChecklist"></div>
+
+    <input
+        type="text"
+        id="customFactor"
+        placeholder="Add custom factor">
+
+    <button onclick="addCustomFactor()">
+        Add Factor
+    </button>
+
+</div>
+
+<div class="card">
+
+    <button onclick="saveGrip()">
+        Save Entry
+    </button>
+
+</div>
+
+<div class="card">
+
+    <div class="big" id="readinessText"></div>
+
     <div class="stat" id="todayChange"></div>
+
     <div class="stat" id="lastDeviation"></div>
+
+    <div class="stat" id="bestScore"></div>
+
+    <div class="stat" id="symmetry"></div>
+
 </div>
 
 <div class="card">
+
     <canvas id="chart"></canvas>
+
+</div>
+
+<div class="card">
+
+    <h2>Recent Entries</h2>
+
+    <div id="history"></div>
+
 </div>
 
 <script>
 
+const defaultFactors = [
+
+  "Poor sleep",
+  "Hard training",
+  "DOMS",
+  "Stress",
+  "Caffeine",
+  "Injury/pain",
+  "Illness",
+  "Good recovery",
+  "Competition day",
+  "Shoulder fatigue",
+  "Leg fatigue"
+
+];
+
 let chart;
 
 function getData(){
-    return JSON.parse(localStorage.getItem("gripData") || "[]");
+
+    return JSON.parse(
+        localStorage.getItem("gripData") || "[]"
+    );
 }
 
 function saveData(data){
-    localStorage.setItem("gripData", JSON.stringify(data));
+
+    localStorage.setItem(
+        "gripData",
+        JSON.stringify(data)
+    );
+}
+
+function getFactors(){
+
+    return JSON.parse(
+        localStorage.getItem("customFactors")
+        || "[]"
+    );
+}
+
+function renderFactors(){
+
+    const container =
+        document.getElementById("factorChecklist");
+
+    container.innerHTML = "";
+
+    const allFactors =
+        [...defaultFactors, ...getFactors()];
+
+    allFactors.forEach(f=>{
+
+        container.innerHTML += `
+
+        <label class="factorItem">
+
+            <input
+                type="checkbox"
+                value="${f}">
+
+            ${f}
+
+        </label>
+
+        `;
+    });
+}
+
+function addCustomFactor(){
+
+    const input =
+        document.getElementById("customFactor");
+
+    const val = input.value.trim();
+
+    if(!val) return;
+
+    let factors = getFactors();
+
+    if(!factors.includes(val)){
+
+        factors.push(val);
+
+        localStorage.setItem(
+            "customFactors",
+            JSON.stringify(factors)
+        );
+    }
+
+    input.value = "";
+
+    renderFactors();
+}
+
+function formatTime(t){
+
+    return new Date(t).toLocaleString();
 }
 
 function saveGrip(){
 
-    const input = document.getElementById("gripInput");
-    const value = parseFloat(input.value);
+    const value =
+        parseFloat(
+            document.getElementById("gripInput").value
+        );
 
-    if(!value) return;
+    if(!value){
+
+        alert("Enter grip strength");
+
+        return;
+    }
+
+    const hand =
+        document.getElementById("handSelect").value;
+
+    const mode =
+        document.getElementById("modeSelect").value;
+
+    const sleep =
+        document.getElementById("sleepInput").value;
+
+    const fatigue =
+        document.getElementById("fatigueInput").value;
+
+    const checked =
+      [...document.querySelectorAll(
+        '#factorChecklist input:checked'
+      )]
+      .map(x=>x.value);
 
     let data = getData();
 
     data.push({
+
         value:value,
+        hand:hand,
+        mode:mode,
+        sleep:sleep,
+        fatigue:fatigue,
+        factors:checked,
         time:new Date().toISOString()
+
     });
 
     saveData(data);
 
-    input.value = "";
+    document.getElementById("gripInput").value = "";
 
     updateUI();
 }
@@ -106,27 +333,38 @@ function updateUI(){
 
     const latest = data[data.length-1];
 
-    // Last deviation
-    let deviationText = "No previous data";
+    // last deviation
+
+    let deviationText = "No previous entry";
 
     if(data.length > 1){
+
         const prev = data[data.length-2];
 
-        const diff = latest.value - prev.value;
+        const diff =
+            latest.value - prev.value;
 
         deviationText =
-            `Last deviation: ${diff.toFixed(1)} kg`;
+            "Deviation from last: " +
+            (diff >=0 ? "+" : "") +
+            diff.toFixed(1) +
+            " kg";
     }
 
-    document.getElementById("lastDeviation").innerText =
-        deviationText;
+    document.getElementById("lastDeviation")
+        .innerText = deviationText;
 
-    // 7 day avg
+    // 7d avg
+
     const now = new Date();
 
     const last7 = data.filter(d=>{
+
         const t = new Date(d.time);
-        return (now - t) < 7*24*60*60*1000;
+
+        return (
+            now - t
+        ) < 7*24*60*60*1000;
     });
 
     const avg =
@@ -136,34 +374,191 @@ function updateUI(){
     const pct =
         ((latest.value - avg)/avg)*100;
 
-    document.getElementById("todayChange").innerText =
-        `vs 7d avg: ${pct.toFixed(1)}%`;
+    document.getElementById("todayChange")
+        .innerText =
+        "vs 7d avg: " +
+        pct.toFixed(1) +
+        "%";
 
-    // Graph
-    const labels = data.map(d=>
-        new Date(d.time).toLocaleDateString()
-    );
+    // readiness
 
-    const values = data.map(d=>d.value);
+    let readiness = "";
+    let readinessClass = "";
+
+    if(pct > 5){
+
+        readiness = "READY";
+        readinessClass = "green";
+    }
+    else if(pct < -5){
+
+        readiness = "FATIGUED";
+        readinessClass = "red";
+    }
+    else{
+
+        readiness = "NORMAL";
+        readinessClass = "orange";
+    }
+
+    const readyEl =
+        document.getElementById("readinessText");
+
+    readyEl.innerText = readiness;
+
+    readyEl.className =
+        "big " + readinessClass;
+
+    // best score
+
+    const best =
+        Math.max(...data.map(d=>d.value));
+
+    document.getElementById("bestScore")
+        .innerText =
+        "All-time best: " +
+        best.toFixed(1) +
+        " kg";
+
+    // symmetry
+
+    const left =
+        data.filter(
+            d=>d.hand==="Left"
+        ).slice(-1)[0];
+
+    const right =
+        data.filter(
+            d=>d.hand==="Right"
+        ).slice(-1)[0];
+
+    if(left && right){
+
+        const sym =
+            Math.abs(left.value-right.value)
+            /
+            ((left.value+right.value)/2)
+            *100;
+
+        document.getElementById("symmetry")
+            .innerText =
+            "Symmetry Index: " +
+            sym.toFixed(1) +
+            "%";
+    }
+
+    // graph
+
+    const labels =
+        data.map(d=>
+            new Date(d.time)
+            .toLocaleDateString()
+        );
+
+    const values =
+        data.map(d=>d.value);
+
+    const movingAvg =
+        values.map((v,i,arr)=>{
+
+            const start =
+                Math.max(0,i-6);
+
+            const slice =
+                arr.slice(start,i+1);
+
+            return slice.reduce((a,b)=>a+b,0)
+                / slice.length;
+        });
 
     if(chart){
+
         chart.destroy();
     }
 
     chart = new Chart(
+
         document.getElementById("chart"),
+
         {
             type:"line",
+
             data:{
+
                 labels:labels,
-                datasets:[{
-                    label:"Grip Strength",
-                    data:values
-                }]
+
+                datasets:[
+
+                    {
+                        label:"Grip Strength",
+                        data:values
+                    },
+
+                    {
+                        label:"7d Avg",
+                        data:movingAvg
+                    }
+
+                ]
             }
         }
     );
+
+    // history
+
+    const history =
+        document.getElementById("history");
+
+    history.innerHTML = "";
+
+    const reversed = [...data].reverse();
+
+    reversed.forEach(d=>{
+
+        history.innerHTML += `
+
+        <div class="entry">
+
+            <b>${d.value} kg</b>
+
+            • ${d.hand}
+
+            • ${d.mode}
+
+            <br>
+
+            <span class="small">
+
+                Sleep:
+                ${d.sleep || "-"}
+
+                h |
+
+                Fatigue:
+                ${d.fatigue || "-"}
+
+                |
+
+                ${formatTime(d.time)}
+
+            </span>
+
+            <br>
+
+            <span>
+
+                Factors:
+                ${d.factors?.join(", ") || "-"}
+
+            </span>
+
+        </div>
+
+        `;
+    });
 }
+
+renderFactors();
 
 updateUI();
 
