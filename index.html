@@ -41,11 +41,11 @@ input, select{
 
 button{
     width:100%;
-    padding:16px;
-    margin-top:14px;
+    padding:14px;
+    margin-top:10px;
     border:none;
-    border-radius:14px;
-    font-size:18px;
+    border-radius:12px;
+    font-size:16px;
     font-weight:bold;
     background:black;
     color:white;
@@ -206,6 +206,8 @@ const defaultFactors = [
 ];
 
 let chart;
+
+let editingIndex = null;
 
 function getData(){
 
@@ -373,6 +375,31 @@ function formatTime(t){
     return new Date(t).toLocaleString();
 }
 
+function clearForm(){
+
+    document.getElementById("gripInput")
+        .value = "";
+
+    document.getElementById("sleepInput")
+        .value = "";
+
+    document.getElementById("fatigueInput")
+        .value = "";
+
+    document.querySelectorAll(
+        '#factorChecklist input'
+    ).forEach(x=>x.checked=false);
+
+    document.getElementById("dateTimeInput")
+        .value =
+        new Date(
+          Date.now()
+          - new Date().getTimezoneOffset()*60000
+        )
+        .toISOString()
+        .slice(0,16);
+}
+
 function saveGrip(){
 
     const value =
@@ -411,7 +438,7 @@ function saveGrip(){
 
     let data = getData();
 
-    data.push({
+    const entry = {
 
         value:value,
         hand:hand,
@@ -421,11 +448,87 @@ function saveGrip(){
         factors:checked,
         time:new Date(customTime).toISOString()
 
-    });
+    };
+
+    if(editingIndex !== null){
+
+        data[editingIndex] = entry;
+
+        editingIndex = null;
+
+        document.querySelector(
+            'button[onclick="saveGrip()"]'
+        ).innerText = "Save Entry";
+    }
+    else{
+
+        data.push(entry);
+    }
 
     saveData(data);
 
-    document.getElementById("gripInput").value = "";
+    clearForm();
+
+    updateUI();
+}
+
+function editEntry(index){
+
+    const data = getData();
+
+    const d = data[index];
+
+    editingIndex = index;
+
+    document.getElementById("gripInput")
+        .value = d.value;
+
+    document.getElementById("handSelect")
+        .value = d.hand;
+
+    document.getElementById("modeSelect")
+        .value = d.mode;
+
+    document.getElementById("sleepInput")
+        .value = d.sleep;
+
+    document.getElementById("fatigueInput")
+        .value = d.fatigue;
+
+    document.getElementById("dateTimeInput")
+        .value =
+        new Date(d.time)
+        .toISOString()
+        .slice(0,16);
+
+    document.querySelectorAll(
+        '#factorChecklist input'
+    ).forEach(x=>{
+
+        x.checked =
+            d.factors?.includes(x.value);
+    });
+
+    document.querySelector(
+        'button[onclick="saveGrip()"]'
+    ).innerText = "Update Entry";
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+}
+
+function deleteEntry(index){
+
+    if(!confirm("Delete this entry?"))
+        return;
+
+    let data = getData();
+
+    data.splice(index,1);
+
+    saveData(data);
 
     updateUI();
 }
@@ -618,7 +721,10 @@ function updateUI(){
 
     const reversed = [...data].reverse();
 
-    reversed.forEach(d=>{
+    reversed.forEach((d,reverseIndex)=>{
+
+        const realIndex =
+            data.length - 1 - reverseIndex;
 
         history.innerHTML += `
 
@@ -656,6 +762,22 @@ function updateUI(){
                 ${d.factors?.join(", ") || "-"}
 
             </span>
+
+            <br><br>
+
+            <button
+                onclick="editEntry(${realIndex})">
+
+                Edit
+
+            </button>
+
+            <button
+                onclick="deleteEntry(${realIndex})">
+
+                Delete
+
+            </button>
 
         </div>
 
