@@ -13,7 +13,7 @@ body{
     background:#f2f2f7;
     margin:0;
     padding:18px;
-    max-width:700px;
+    max-width:900px;
     margin:auto;
 }
 
@@ -23,10 +23,6 @@ body{
     padding:18px;
     margin-bottom:18px;
     box-shadow:0 2px 8px rgba(0,0,0,0.06);
-}
-
-h1,h2,h3{
-    margin-top:0;
 }
 
 input, select{
@@ -77,7 +73,6 @@ button{
 
 .factorItem{
     margin:8px 0;
-    font-size:16px;
 }
 
 </style>
@@ -87,103 +82,178 @@ button{
 
 <div class="card">
 
-    <h1>Grip Tracker Pro</h1>
+<h1>Grip Tracker Pro</h1>
 
-    <input
-        type="number"
-        id="gripInput"
-        placeholder="Grip Strength (kg)">
+<input type="number"
+id="gripInput"
+placeholder="Grip Strength (kg)">
 
-    <select id="handSelect">
-        <option value="Right">Right Hand</option>
-        <option value="Left">Left Hand</option>
-    </select>
+<select id="handSelect">
+<option value="Right">Right Hand</option>
+<option value="Left">Left Hand</option>
+</select>
 
-    <select id="modeSelect">
-        <option value="Morning">Morning</option>
-        <option value="Pre-training">Pre-training</option>
-        <option value="Post-training">Post-training</option>
-    </select>
+<select id="modeSelect">
+<option value="Morning">Morning</option>
+<option value="Pre-training">Pre-training</option>
+<option value="Post-training">Post-training</option>
+</select>
 
-    <input
-        type="datetime-local"
-        id="dateTimeInput">
+<input type="datetime-local"
+id="dateTimeInput">
 
-    <input
-        type="number"
-        id="sleepInput"
-        placeholder="Sleep Hours">
+<input type="number"
+id="sleepInput"
+placeholder="Sleep Hours">
 
-    <input
-        type="number"
-        id="fatigueInput"
-        placeholder="Fatigue 1-10">
+<input type="number"
+id="fatigueInput"
+placeholder="Fatigue 1-10">
 
 </div>
 
 <div class="card">
 
-    <h2>Factors</h2>
+<h2>Factors</h2>
 
-    <div id="factorChecklist"></div>
+<div id="factorChecklist"></div>
 
-    <input
-        type="text"
-        id="customFactor"
-        placeholder="Add custom factor">
+<input type="text"
+id="customFactor"
+placeholder="Add custom factor">
 
-    <button onclick="addCustomFactor()">
-        Add Factor
-    </button>
-
-</div>
-
-<div class="card">
-
-    <button onclick="saveGrip()">
-        Save Entry
-    </button>
-
-    <button onclick="exportData()">
-        Export Backup
-    </button>
-
-    <input
-        type="file"
-        id="importFile"
-        accept=".json">
-
-    <button onclick="importData()">
-        Import Backup
-    </button>
+<button onclick="addCustomFactor()">
+Add Factor
+</button>
 
 </div>
 
 <div class="card">
 
-    <div class="big" id="readinessText"></div>
+<button onclick="saveGrip()">
+Save Entry
+</button>
 
-    <div class="stat" id="todayChange"></div>
+<button onclick="exportData()">
+Export Backup
+</button>
 
-    <div class="stat" id="lastDeviation"></div>
+<input type="file"
+id="importFile"
+accept=".json">
 
-    <div class="stat" id="bestScore"></div>
-
-    <div class="stat" id="symmetry"></div>
+<button onclick="importData()">
+Import Backup
+</button>
 
 </div>
 
 <div class="card">
 
-    <canvas id="chart"></canvas>
+<div class="big"
+id="readinessText"></div>
+
+<div class="stat"
+id="todayChange"></div>
+
+<div class="stat"
+id="lastDeviation"></div>
+
+<div class="stat"
+id="bestScore"></div>
+
+<div class="stat"
+id="symmetry"></div>
 
 </div>
 
 <div class="card">
 
-    <h2>Recent Entries</h2>
+<h2>Main Graph Filters</h2>
 
-    <div id="history"></div>
+<select id="filterHand"
+onchange="updateUI()">
+
+<option value="All">
+All Hands
+</option>
+
+<option value="Right">
+Right Only
+</option>
+
+<option value="Left">
+Left Only
+</option>
+
+</select>
+
+<select id="filterMode"
+onchange="updateUI()">
+
+<option value="All">
+All Modes
+</option>
+
+<option value="Morning">
+Morning
+</option>
+
+<option value="Pre-training">
+Pre-training
+</option>
+
+<option value="Post-training">
+Post-training
+</option>
+
+</select>
+
+<select id="filterFactor"
+onchange="updateUI()">
+
+<option value="All">
+All Factors
+</option>
+
+</select>
+
+</div>
+
+<div class="card">
+
+<h2>Grip Trend</h2>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<div class="card">
+
+<h2>Correlation Analysis</h2>
+
+<select id="correlationX"
+onchange="updateCorrelationGraph()">
+
+<option value="sleep">
+Sleep
+</option>
+
+<option value="fatigue">
+Fatigue
+</option>
+
+</select>
+
+<canvas id="correlationChart"></canvas>
+
+</div>
+
+<div class="card">
+
+<h2>Recent Entries</h2>
+
+<div id="history"></div>
 
 </div>
 
@@ -191,612 +261,781 @@ button{
 
 const defaultFactors = [
 
-  "Poor sleep",
-  "Hard training",
-  "DOMS",
-  "Stress",
-  "Caffeine",
-  "Injury/pain",
-  "Illness",
-  "Good recovery",
-  "Competition day",
-  "Shoulder fatigue",
-  "Leg fatigue"
+"Poor sleep",
+"Hard training",
+"DOMS",
+"Stress",
+"Caffeine",
+"Injury/pain",
+"Illness",
+"Good recovery",
+"Competition day",
+"Shoulder fatigue",
+"Leg fatigue"
 
 ];
 
 let chart;
-
+let correlationChart;
 let editingIndex = null;
 
 function getData(){
 
-    return JSON.parse(
-        localStorage.getItem("gripData") || "[]"
-    );
+return JSON.parse(
+localStorage.getItem("gripData") || "[]"
+);
 }
 
 function saveData(data){
 
-    localStorage.setItem(
-        "gripData",
-        JSON.stringify(data)
-    );
+localStorage.setItem(
+"gripData",
+JSON.stringify(data)
+);
 }
 
 function getFactors(){
 
-    return JSON.parse(
-        localStorage.getItem("customFactors")
-        || "[]"
-    );
+return JSON.parse(
+localStorage.getItem("customFactors")
+|| "[]"
+);
 }
 
 function renderFactors(){
 
-    const container =
-        document.getElementById("factorChecklist");
+const container =
+document.getElementById(
+"factorChecklist"
+);
 
-    container.innerHTML = "";
+container.innerHTML = "";
 
-    const allFactors =
-        [...defaultFactors, ...getFactors()];
+const allFactors = [
+...defaultFactors,
+...getFactors()
+];
 
-    allFactors.forEach(f=>{
+allFactors.forEach(f=>{
 
-        container.innerHTML += `
+container.innerHTML += `
 
-        <label class="factorItem">
+<label class="factorItem">
 
-            <input
-                type="checkbox"
-                value="${f}">
+<input
+type="checkbox"
+value="${f}">
 
-            ${f}
+${f}
 
-        </label>
+</label>
 
-        `;
-    });
+`;
+});
+
+updateFilterFactors();
+}
+
+function updateFilterFactors(){
+
+const select =
+document.getElementById(
+"filterFactor"
+);
+
+select.innerHTML = `
+<option value="All">
+All Factors
+</option>
+`;
+
+const allFactors = [
+...defaultFactors,
+...getFactors()
+];
+
+allFactors.forEach(f=>{
+
+select.innerHTML += `
+<option value="${f}">
+${f}
+</option>
+`;
+});
 }
 
 function addCustomFactor(){
 
-    const input =
-        document.getElementById("customFactor");
+const input =
+document.getElementById(
+"customFactor"
+);
 
-    const val = input.value.trim();
+const val = input.value.trim();
 
-    if(!val) return;
+if(!val) return;
 
-    let factors = getFactors();
+let factors = getFactors();
 
-    if(!factors.includes(val)){
+if(!factors.includes(val)){
 
-        factors.push(val);
+factors.push(val);
 
-        localStorage.setItem(
-            "customFactors",
-            JSON.stringify(factors)
-        );
-    }
+localStorage.setItem(
+"customFactors",
+JSON.stringify(factors)
+);
+}
 
-    input.value = "";
+input.value = "";
 
-    renderFactors();
+renderFactors();
 }
 
 function exportData(){
 
-    const data = {
+const data = {
 
-        gripData:getData(),
+gripData:getData(),
+customFactors:getFactors()
 
-        customFactors:getFactors()
+};
 
-    };
+const blob = new Blob(
+[JSON.stringify(data,null,2)],
+{type:"application/json"}
+);
 
-    const blob = new Blob(
-        [JSON.stringify(data,null,2)],
-        {type:"application/json"}
-    );
+const url =
+URL.createObjectURL(blob);
 
-    const url =
-        URL.createObjectURL(blob);
+const a =
+document.createElement("a");
 
-    const a =
-        document.createElement("a");
+a.href = url;
 
-    a.href = url;
+a.download =
+"griptracker_backup.json";
 
-    a.download =
-        "griptracker_backup.json";
+a.click();
 
-    a.click();
-
-    URL.revokeObjectURL(url);
+URL.revokeObjectURL(url);
 }
 
 function importData(){
 
-    const file =
-        document.getElementById("importFile")
-        .files[0];
+const file =
+document.getElementById(
+"importFile"
+).files[0];
 
-    if(!file){
+if(!file){
 
-        alert("Select a backup file");
+alert("Select backup file");
 
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function(e){
-
-        try{
-
-            const imported =
-                JSON.parse(e.target.result);
-
-            if(imported.gripData){
-
-                localStorage.setItem(
-                    "gripData",
-                    JSON.stringify(imported.gripData)
-                );
-            }
-
-            if(imported.customFactors){
-
-                localStorage.setItem(
-                    "customFactors",
-                    JSON.stringify(imported.customFactors)
-                );
-            }
-
-            renderFactors();
-
-            updateUI();
-
-            alert("Backup imported");
-
-        }catch{
-
-            alert("Invalid backup file");
-        }
-    };
-
-    reader.readAsText(file);
+return;
 }
 
-function formatTime(t){
+const reader = new FileReader();
 
-    return new Date(t).toLocaleString();
+reader.onload = function(e){
+
+try{
+
+const imported =
+JSON.parse(e.target.result);
+
+if(imported.gripData){
+
+localStorage.setItem(
+"gripData",
+JSON.stringify(
+imported.gripData
+)
+);
+}
+
+if(imported.customFactors){
+
+localStorage.setItem(
+"customFactors",
+JSON.stringify(
+imported.customFactors
+)
+);
+}
+
+renderFactors();
+updateUI();
+
+alert("Imported");
+
+}catch{
+
+alert("Invalid file");
+}
+};
+
+reader.readAsText(file);
 }
 
 function clearForm(){
 
-    document.getElementById("gripInput")
-        .value = "";
+document.getElementById(
+"gripInput"
+).value = "";
 
-    document.getElementById("sleepInput")
-        .value = "";
+document.getElementById(
+"sleepInput"
+).value = "";
 
-    document.getElementById("fatigueInput")
-        .value = "";
+document.getElementById(
+"fatigueInput"
+).value = "";
 
-    document.querySelectorAll(
-        '#factorChecklist input'
-    ).forEach(x=>x.checked=false);
+document.querySelectorAll(
+'#factorChecklist input'
+).forEach(x=>x.checked=false);
 
-    document.getElementById("dateTimeInput")
-        .value =
-        new Date(
-          Date.now()
-          - new Date().getTimezoneOffset()*60000
-        )
-        .toISOString()
-        .slice(0,16);
+document.getElementById(
+"dateTimeInput"
+).value =
+new Date(
+Date.now()
+- new Date().getTimezoneOffset()*60000
+)
+.toISOString()
+.slice(0,16);
 }
 
 function saveGrip(){
 
-    const value =
-        parseFloat(
-            document.getElementById("gripInput").value
-        );
+const value =
+parseFloat(
+document.getElementById(
+"gripInput"
+).value
+);
 
-    if(!value){
+if(!value){
 
-        alert("Enter grip strength");
+alert("Enter grip");
 
-        return;
-    }
+return;
+}
 
-    const hand =
-        document.getElementById("handSelect").value;
+const hand =
+document.getElementById(
+"handSelect"
+).value;
 
-    const mode =
-        document.getElementById("modeSelect").value;
+const mode =
+document.getElementById(
+"modeSelect"
+).value;
 
-    const sleep =
-        document.getElementById("sleepInput").value;
+const sleep =
+document.getElementById(
+"sleepInput"
+).value;
 
-    const fatigue =
-        document.getElementById("fatigueInput").value;
+const fatigue =
+document.getElementById(
+"fatigueInput"
+).value;
 
-    const customTime =
-        document.getElementById("dateTimeInput")
-        .value;
+const customTime =
+document.getElementById(
+"dateTimeInput"
+).value;
 
-    const checked =
-      [...document.querySelectorAll(
-        '#factorChecklist input:checked'
-      )]
-      .map(x=>x.value);
+const checked =
+[...document.querySelectorAll(
+'#factorChecklist input:checked'
+)]
+.map(x=>x.value);
 
-    let data = getData();
+let data = getData();
 
-    const entry = {
+const entry = {
 
-        value:value,
-        hand:hand,
-        mode:mode,
-        sleep:sleep,
-        fatigue:fatigue,
-        factors:checked,
-        time:new Date(customTime).toISOString()
+value:value,
+hand:hand,
+mode:mode,
+sleep:sleep,
+fatigue:fatigue,
+factors:checked,
+time:new Date(customTime)
+.toISOString()
 
-    };
+};
 
-    if(editingIndex !== null){
+if(editingIndex !== null){
 
-        data[editingIndex] = entry;
+data[editingIndex] = entry;
 
-        editingIndex = null;
+editingIndex = null;
+}
+else{
 
-        document.querySelector(
-            'button[onclick="saveGrip()"]'
-        ).innerText = "Save Entry";
-    }
-    else{
+data.push(entry);
+}
 
-        data.push(entry);
-    }
+saveData(data);
 
-    saveData(data);
+clearForm();
 
-    clearForm();
-
-    updateUI();
+updateUI();
 }
 
 function editEntry(index){
 
-    const data = getData();
+const data = getData();
 
-    const d = data[index];
+const d = data[index];
 
-    editingIndex = index;
+editingIndex = index;
 
-    document.getElementById("gripInput")
-        .value = d.value;
+document.getElementById(
+"gripInput"
+).value = d.value;
 
-    document.getElementById("handSelect")
-        .value = d.hand;
+document.getElementById(
+"handSelect"
+).value = d.hand;
 
-    document.getElementById("modeSelect")
-        .value = d.mode;
+document.getElementById(
+"modeSelect"
+).value = d.mode;
 
-    document.getElementById("sleepInput")
-        .value = d.sleep;
+document.getElementById(
+"sleepInput"
+).value = d.sleep;
 
-    document.getElementById("fatigueInput")
-        .value = d.fatigue;
+document.getElementById(
+"fatigueInput"
+).value = d.fatigue;
 
-    document.getElementById("dateTimeInput")
-        .value =
-        new Date(d.time)
-        .toISOString()
-        .slice(0,16);
+document.getElementById(
+"dateTimeInput"
+).value =
+new Date(d.time)
+.toISOString()
+.slice(0,16);
 
-    document.querySelectorAll(
-        '#factorChecklist input'
-    ).forEach(x=>{
+document.querySelectorAll(
+'#factorChecklist input'
+).forEach(x=>{
 
-        x.checked =
-            d.factors?.includes(x.value);
-    });
+x.checked =
+d.factors?.includes(x.value);
+});
 
-    document.querySelector(
-        'button[onclick="saveGrip()"]'
-    ).innerText = "Update Entry";
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
 }
 
 function deleteEntry(index){
 
-    if(!confirm("Delete this entry?"))
-        return;
+if(!confirm("Delete entry?"))
+return;
 
-    let data = getData();
+let data = getData();
 
-    data.splice(index,1);
+data.splice(index,1);
 
-    saveData(data);
+saveData(data);
 
-    updateUI();
+updateUI();
+}
+
+function filterData(data){
+
+const handFilter =
+document.getElementById(
+"filterHand"
+).value;
+
+const modeFilter =
+document.getElementById(
+"filterMode"
+).value;
+
+const factorFilter =
+document.getElementById(
+"filterFactor"
+).value;
+
+return data.filter(d=>{
+
+let ok = true;
+
+if(handFilter !== "All")
+ok = ok && d.hand===handFilter;
+
+if(modeFilter !== "All")
+ok = ok && d.mode===modeFilter;
+
+if(factorFilter !== "All")
+ok = ok &&
+d.factors?.includes(factorFilter);
+
+return ok;
+});
+}
+
+function updateCorrelationGraph(){
+
+const data = getData();
+
+const xType =
+document.getElementById(
+"correlationX"
+).value;
+
+const points = data
+.filter(d=>d[xType])
+.map(d=>({
+
+x:Number(d[xType]),
+y:d.value
+
+}));
+
+if(correlationChart)
+correlationChart.destroy();
+
+correlationChart =
+new Chart(
+
+document.getElementById(
+"correlationChart"
+),
+
+{
+type:"scatter",
+
+data:{
+datasets:[{
+
+label:
+"Grip Correlation",
+
+data:points
+
+}]
+},
+
+options:{
+
+scales:{
+
+x:{
+title:{
+display:true,
+text:xType
+}
+},
+
+y:{
+title:{
+display:true,
+text:"Grip"
+}
+}
+
+}
+}
+}
+);
 }
 
 function updateUI(){
 
-    let data = getData();
+let data = getData();
 
-    if(data.length === 0) return;
+if(data.length===0)
+return;
 
-    const latest = data[data.length-1];
+const latest =
+data[data.length-1];
 
-    // last deviation
+let deviationText =
+"No previous entry";
 
-    let deviationText = "No previous entry";
+if(data.length>1){
 
-    if(data.length > 1){
+const prev =
+data[data.length-2];
 
-        const prev = data[data.length-2];
+const diff =
+latest.value-prev.value;
+
+deviationText =
+"Deviation: " +
+(diff>=0?"+":"") +
+diff.toFixed(1) +
+" kg";
+}
+
+document.getElementById(
+"lastDeviation"
+).innerText =
+deviationText;
+
+const now = new Date();
+
+const last7 = data.filter(d=>{
+
+const t = new Date(d.time);
+
+return (
+now - t
+) < 7*24*60*60*1000;
+});
+
+const avg =
+last7.reduce(
+(a,b)=>a+b.value,0
+)
+/ last7.length;
+
+const pct =
+((latest.value-avg)/avg)*100;
+
+document.getElementById(
+"todayChange"
+).innerText =
+"vs 7d avg: " +
+pct.toFixed(1) +
+"%";
+
+let readiness = "";
+let readinessClass = "";
+
+if(pct > 5){
+
+readiness = "READY";
+readinessClass = "green";
+}
+else if(pct < -5){
+
+readiness = "FATIGUED";
+readinessClass = "red";
+}
+else{
 
-        const diff =
-            latest.value - prev.value;
+readiness = "NORMAL";
+readinessClass = "orange";
+}
 
-        deviationText =
-            "Deviation from last: " +
-            (diff >=0 ? "+" : "") +
-            diff.toFixed(1) +
-            " kg";
-    }
+const readyEl =
+document.getElementById(
+"readinessText"
+);
 
-    document.getElementById("lastDeviation")
-        .innerText = deviationText;
+readyEl.innerText =
+readiness;
 
-    // 7d avg
+readyEl.className =
+"big " + readinessClass;
 
-    const now = new Date();
+const best =
+Math.max(
+...data.map(d=>d.value)
+);
 
-    const last7 = data.filter(d=>{
+document.getElementById(
+"bestScore"
+).innerText =
+"Best: " +
+best.toFixed(1) +
+" kg";
 
-        const t = new Date(d.time);
+const left =
+data.filter(
+d=>d.hand==="Left"
+).slice(-1)[0];
 
-        return (
-            now - t
-        ) < 7*24*60*60*1000;
-    });
+const right =
+data.filter(
+d=>d.hand==="Right"
+).slice(-1)[0];
 
-    const avg =
-        last7.reduce((a,b)=>a+b.value,0)
-        / last7.length;
+if(left && right){
 
-    const pct =
-        ((latest.value - avg)/avg)*100;
+const sym =
+Math.abs(
+left.value-right.value
+)
+/
+(
+(left.value+right.value)/2
+)
+*100;
 
-    document.getElementById("todayChange")
-        .innerText =
-        "vs 7d avg: " +
-        pct.toFixed(1) +
-        "%";
+document.getElementById(
+"symmetry"
+).innerText =
+"Symmetry: " +
+sym.toFixed(1) +
+"%";
+}
 
-    // readiness
+const filtered =
+filterData(data);
 
-    let readiness = "";
-    let readinessClass = "";
+const labels =
+filtered.map(d=>
+new Date(d.time)
+.toLocaleDateString()
+);
 
-    if(pct > 5){
+const values =
+filtered.map(d=>d.value);
 
-        readiness = "READY";
-        readinessClass = "green";
-    }
-    else if(pct < -5){
+const movingAvg =
+values.map((v,i,arr)=>{
 
-        readiness = "FATIGUED";
-        readinessClass = "red";
-    }
-    else{
+const start =
+Math.max(0,i-6);
 
-        readiness = "NORMAL";
-        readinessClass = "orange";
-    }
+const slice =
+arr.slice(start,i+1);
 
-    const readyEl =
-        document.getElementById("readinessText");
+return slice.reduce(
+(a,b)=>a+b,0
+)/slice.length;
+});
 
-    readyEl.innerText = readiness;
+if(chart)
+chart.destroy();
 
-    readyEl.className =
-        "big " + readinessClass;
+chart = new Chart(
 
-    // best score
+document.getElementById(
+"chart"
+),
 
-    const best =
-        Math.max(...data.map(d=>d.value));
+{
+type:"line",
 
-    document.getElementById("bestScore")
-        .innerText =
-        "All-time best: " +
-        best.toFixed(1) +
-        " kg";
+data:{
 
-    // symmetry
+labels:labels,
 
-    const left =
-        data.filter(
-            d=>d.hand==="Left"
-        ).slice(-1)[0];
+datasets:[
 
-    const right =
-        data.filter(
-            d=>d.hand==="Right"
-        ).slice(-1)[0];
+{
+label:"Grip",
+data:values
+},
 
-    if(left && right){
+{
+label:"7d Avg",
+data:movingAvg
+}
 
-        const sym =
-            Math.abs(left.value-right.value)
-            /
-            ((left.value+right.value)/2)
-            *100;
+]
+}
+}
+);
 
-        document.getElementById("symmetry")
-            .innerText =
-            "Symmetry Index: " +
-            sym.toFixed(1) +
-            "%";
-    }
+const history =
+document.getElementById(
+"history"
+);
 
-    // graph
+history.innerHTML = "";
 
-    const labels =
-        data.map(d=>
-            new Date(d.time)
-            .toLocaleDateString()
-        );
+const reversed =
+[...data].reverse();
 
-    const values =
-        data.map(d=>d.value);
+reversed.forEach(
+(d,reverseIndex)=>{
 
-    const movingAvg =
-        values.map((v,i,arr)=>{
+const realIndex =
+data.length-1
+-reverseIndex;
 
-            const start =
-                Math.max(0,i-6);
+history.innerHTML += `
 
-            const slice =
-                arr.slice(start,i+1);
+<div class="entry">
 
-            return slice.reduce((a,b)=>a+b,0)
-                / slice.length;
-        });
+<b>${d.value} kg</b>
 
-    if(chart){
+• ${d.hand}
 
-        chart.destroy();
-    }
+• ${d.mode}
 
-    chart = new Chart(
+<br>
 
-        document.getElementById("chart"),
+<span class="small">
 
-        {
-            type:"line",
+Sleep:
+${d.sleep || "-"}
 
-            data:{
+h |
 
-                labels:labels,
+Fatigue:
+${d.fatigue || "-"}
 
-                datasets:[
+|
 
-                    {
-                        label:"Grip Strength",
-                        data:values
-                    },
+${new Date(d.time)
+.toLocaleString()}
 
-                    {
-                        label:"7d Avg",
-                        data:movingAvg
-                    }
+</span>
 
-                ]
-            }
-        }
-    );
+<br>
 
-    // history
+<span>
 
-    const history =
-        document.getElementById("history");
+Factors:
+${d.factors?.join(", ")
+|| "-"}
 
-    history.innerHTML = "";
+</span>
 
-    const reversed = [...data].reverse();
+<br><br>
 
-    reversed.forEach((d,reverseIndex)=>{
+<button
+onclick="editEntry(${realIndex})">
 
-        const realIndex =
-            data.length - 1 - reverseIndex;
+Edit
 
-        history.innerHTML += `
+</button>
 
-        <div class="entry">
+<button
+onclick="deleteEntry(${realIndex})">
 
-            <b>${d.value} kg</b>
+Delete
 
-            • ${d.hand}
+</button>
 
-            • ${d.mode}
+</div>
 
-            <br>
+`;
+});
 
-            <span class="small">
-
-                Sleep:
-                ${d.sleep || "-"}
-
-                h |
-
-                Fatigue:
-                ${d.fatigue || "-"}
-
-                |
-
-                ${formatTime(d.time)}
-
-            </span>
-
-            <br>
-
-            <span>
-
-                Factors:
-                ${d.factors?.join(", ") || "-"}
-
-            </span>
-
-            <br><br>
-
-            <button
-                onclick="editEntry(${realIndex})">
-
-                Edit
-
-            </button>
-
-            <button
-                onclick="deleteEntry(${realIndex})">
-
-                Delete
-
-            </button>
-
-        </div>
-
-        `;
-    });
+updateCorrelationGraph();
 }
 
 renderFactors();
 
 updateUI();
 
-document.getElementById("dateTimeInput")
-    .value =
-    new Date(
-      Date.now()
-      - new Date().getTimezoneOffset()*60000
-    )
-    .toISOString()
-    .slice(0,16);
+document.getElementById(
+"dateTimeInput"
+).value =
+new Date(
+Date.now()
+- new Date().getTimezoneOffset()*60000
+)
+.toISOString()
+.slice(0,16);
 
 </script>
 
